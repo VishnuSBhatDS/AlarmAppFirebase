@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
-import java.io.IOException;
 import fi.iki.elonen.NanoHTTPD;
 
 public class WebhookServer extends NanoHTTPD {
@@ -25,7 +24,8 @@ public class WebhookServer extends NanoHTTPD {
             if ("/trigger".equalsIgnoreCase(uri)) {
                 Intent alarmIntent = new Intent(context, AlarmService.class);
                 alarmIntent.setAction("PLAY_ALARM");
-                context.startService(alarmIntent);
+//                context.startService(alarmIntent);
+                context.startForegroundService(alarmIntent);
                 return newFixedLengthResponse(Response.Status.OK, "text/plain", "Alarm Triggered!");
             }
 
@@ -43,5 +43,4 @@ public class WebhookServer extends NanoHTTPD {
             return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "text/plain", "Error");
         }
     }
-
 }
