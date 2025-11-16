@@ -1,4 +1,24 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
-plugins {
-alias(libs.plugins.android.application) apply false
+// Root build.gradle
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        // Android Gradle Plugin (required for com.android.application plugin)
+        classpath("com.android.tools.build:gradle:8.5.2")
+
+        // Google services plugin for Firebase
+        classpath("com.google.gms:google-services:4.4.2")
+
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
 }

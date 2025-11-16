@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "822166219520",
+    "project_id": "alarmapp-321fd",
+    "storage_bucket": "alarmapp-321fd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:822166219520:android:2cc586dfd1e83a7a6d21e5",
+        "android_client_info": {
+          "package_name": "com.example.criticalalerts"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDUbYW8oLGWhCE4DgYixVxORrpbOilf56I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

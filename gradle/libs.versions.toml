@@ -1,20 +1,13 @@
 [versions]
-agp = "8.12.3"
-junit = "4.13.2"
-junitVersion = "1.1.5"
-espressoCore = "3.5.1"
-appcompat = "1.6.1"
-material = "1.10.0"
-nanohttpd = "2.3.2"
+agp = "8.5.2"
+googleServices = "4.4.2"
+firebaseMessaging = "24.0.0"
+googleServicesVersion = "4.4.4"
 
 [libraries]
-junit = { group = "junit", name = "junit", version.ref = "junit" }
-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
-material = { group = "com.google.android.material", name = "material", version.ref = "material" }
-#nanohttpd = { module = "org.nanohttpd:nanohttpd", version.ref = "nanohttpd" }
-nanohttpd = { group = "org.nanohttpd", name = "nanohttpd", version = "2.3.1" }
+firebase-messaging = { module = "com.google.firebase:firebase-messaging", version.ref = "firebaseMessaging" }
+google-services = { module = "com.google.gms:google-services", version.ref = "googleServicesVersion" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
