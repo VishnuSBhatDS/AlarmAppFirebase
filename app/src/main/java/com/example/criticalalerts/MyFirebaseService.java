@@ -24,43 +24,48 @@ public class MyFirebaseService extends FirebaseMessagingService {
         data.put("platform", "android");
 
         db.collection("device_tokens")
-                .document(token)  // token itself becomes the docId
+                .document(token)
                 .set(data)
                 .addOnSuccessListener(a -> Log.i("FCM", "Token saved to Firestore"))
                 .addOnFailureListener(e -> Log.e("FCM", "Failed to save token", e));
     }
 
-
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
+
         Log.i("FCM", "Received message: " + remoteMessage.getData());
 
         String action = remoteMessage.getData().get("action");
         if (action == null) return;
 
-        if (action.equals("PLAY_ALARM")) {
-            Intent i = new Intent(this, AlarmService.class);
-            i.setAction("PLAY_ALARM");
-//            startForegroundService(i);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(i);
-            } else {
-                startService(i);
-            }
+        switch (action) {
 
-        }
+            case "PLAY_ALARM":
+                String ttsMessage = remoteMessage.getData().get("message"); // 🔥 TTS text
+                Log.i("FCM", "Alarm message: " + ttsMessage);
 
-        if (action.equals("STOP_ALARM")) {
-            Intent i = new Intent(this, AlarmService.class);
-            i.setAction("STOP_ALARM");
-            startService(i);
+                Intent playIntent = new Intent(this, AlarmService.class);
+                playIntent.setAction("PLAY_ALARM");
+                playIntent.putExtra("message", ttsMessage);   // 🔥 pass TTS text
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(playIntent);
+                } else {
+                    startService(playIntent);
+                }
+                break;
+
+            case "STOP_ALARM":
+                Intent stopIntent = new Intent(this, AlarmService.class);
+                stopIntent.setAction("STOP_ALARM");
+                startService(stopIntent);
+                break;
         }
     }
 
     @Override
     public void onNewToken(String token) {
-        Log.i("FCM", "New token: " + token);
+        Log.i("FCM", "New token received: " + token);
         saveTokenToFirestore(token);
-        // TODO: send token to your server if needed
     }
 }
