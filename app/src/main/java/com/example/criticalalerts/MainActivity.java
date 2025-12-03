@@ -8,6 +8,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.widget.Button;
 
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -35,6 +36,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
         setContentView(R.layout.activity_main);
+
+        Button stop = findViewById(R.id.stopButton);
+        stop.setOnClickListener(v -> {
+            startService(AlarmService.stopAlarmIntent(this));
+            finish();
+        });
 
         // No webhook logic
         // No foreground service

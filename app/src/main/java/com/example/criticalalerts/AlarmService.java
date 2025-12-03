@@ -11,6 +11,8 @@ import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -28,7 +30,8 @@ public class AlarmService extends Service {
 
     private static final String CHANNEL_ID = "alarm_channel";
     private static final int NOTIF_ID = 5001;
-
+    private final Handler ttsHandler = new Handler(Looper.getMainLooper());
+    private boolean isAlarmRunning = false;
     private MediaPlayer mediaPlayer;
     private Vibrator vibrator;
     private TextToSpeech tts;
@@ -52,17 +55,38 @@ public class AlarmService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-        if (intent != null && "PLAY_ALARM".equals(intent.getAction())) {
+        if (intent == null) return START_STICKY;
+
+        String action = intent.getAction();
+
+        if ("PLAY_ALARM".equals(action)) {
+
+            // --- Prevent duplicate alarms ---
+            if (isAlarmRunning) {
+                Log.w("ALARM", "Alarm already running → ignoring PLAY_ALARM");
+
+                // Optional: refresh TTS message
+                String msg = intent.getStringExtra("message");
+                if (msg != null) speakMessage(msg);
+
+                return START_STICKY;
+            }
+
+            // First time alarm is ringing
+            isAlarmRunning = true;
 
             playAlarmSafe();
 
             String msg = intent.getStringExtra("message");
-            if (msg != null) {
-                speakMessage(msg);
-            }
+            if (msg != null) speakMessage(msg);
 
-        } else if (intent != null && "STOP_ALARM".equals(intent.getAction())) {
+        }
+
+        else if ("STOP_ALARM".equals(action)) {
+
+            Log.i("ALARM", "STOP_ALARM received");
             stopAlarm();
+
         }
 
         return START_STICKY;
@@ -161,7 +185,7 @@ public class AlarmService extends Service {
                     tts.setLanguage(Locale.forLanguageTag("en-IN"));
                 } catch (Exception ignored) {}
 
-                setTTSVoice("male", "en-IN");
+                setTTSVoice("en-in-x-enm-network");
 
                 Log.i("TTS", "TTS Ready");
 
@@ -180,40 +204,61 @@ public class AlarmService extends Service {
         });
     }
 
-    private void setTTSVoice(String gender, String localeCode) {
+    private void setTTSVoice(String voiceName) {
         if (!ttsReady || tts == null) return;
 
         try {
-            Locale loc = Locale.forLanguageTag(localeCode);
-            tts.setLanguage(loc);
-
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 for (Voice v : tts.getVoices()) {
-                    String name = v.getName().toLowerCase();
-
-                    boolean localeMatches =
-                            name.contains(localeCode.replace("-", "_").toLowerCase()) ||
-                                    (v.getLocale() != null &&
-                                            v.getLocale().toLanguageTag().toLowerCase().contains(localeCode.toLowerCase()));
-
-                    boolean genderMatches =
-                            (gender.equals("male") && name.contains("male")) ||
-                                    (gender.equals("female") && name.contains("female"));
-
-                    if (localeMatches && genderMatches) {
+                    if (v.getName().equalsIgnoreCase(voiceName)) {
                         tts.setVoice(v);
-                        Log.i("TTS", "Using voice: " + v.getName());
+                        Log.i("TTS", "Voice set to: " + v.getName());
                         return;
                     }
                 }
             }
 
-            Log.w("TTS", "No matching voice for " + gender + " / " + localeCode);
+            Log.w("TTS", "Voice not found: " + voiceName);
 
         } catch (Exception e) {
-            Log.e("TTS", "setTTSVoice error: " + e);
+            Log.e("TTS", "Voice selection error: " + e);
         }
     }
+
+//    private void setTTSVoice(String gender, String localeCode) {
+//        if (!ttsReady || tts == null) return;
+//
+//        try {
+//            Locale loc = Locale.forLanguageTag(localeCode);
+//            tts.setLanguage(loc);
+//
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//                for (Voice v : tts.getVoices()) {
+//                    String name = v.getName().toLowerCase();
+//
+//                    boolean localeMatches =
+//                            name.contains(localeCode.replace("-", "_").toLowerCase()) ||
+//                                    (v.getLocale() != null &&
+//                                            v.getLocale().toLanguageTag().toLowerCase().contains(localeCode.toLowerCase()));
+//
+//                    boolean genderMatches =
+//                            (gender.equals("male") && name.contains("male")) ||
+//                                    (gender.equals("female") && name.contains("female"));
+//
+//                    if (localeMatches && genderMatches) {
+//                        tts.setVoice(v);
+//                        Log.i("TTS", "Using voice: " + v.getName());
+//                        return;
+//                    }
+//                }
+//            }
+//
+//            Log.w("TTS", "No matching voice for " + gender + " / " + localeCode);
+//
+//        } catch (Exception e) {
+//            Log.e("TTS", "setTTSVoice error: " + e);
+//        }
+//    }
 
     // ---------------------------------------------------------------
     // SPEAK MESSAGE + LOOP (WITH TTS INIT QUEUE)
@@ -257,13 +302,24 @@ public class AlarmService extends Service {
 
                 if (!ttsLoop) return;
 
-                if (mediaPlayer != null) mediaPlayer.setVolume(0.4f, 0.4f);
+                if (mediaPlayer != null)
+                    mediaPlayer.setVolume(0.4f, 0.4f);
 
-                Bundle b = new Bundle();
-                b.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1.0f);
+                // Delay before repeating TTS (e.g., 2 seconds)
+                ttsHandler.postDelayed(() -> {
 
-                tts.speak(lastMessage, TextToSpeech.QUEUE_FLUSH, b, "ALARM_TTS");
+                    if (!ttsLoop) return;
+
+                    Bundle b = new Bundle();
+                    b.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1.0f);
+
+                    Log.i("TTS", "Looping after delay…");
+
+                    tts.speak(lastMessage, TextToSpeech.QUEUE_FLUSH, b, "ALARM_TTS");
+
+                }, 2000); // 2000 ms = 2 second delay
             }
+
 
             @Override public void onError(String id) {
                 Log.e("TTS", "Error in TTS loop");
